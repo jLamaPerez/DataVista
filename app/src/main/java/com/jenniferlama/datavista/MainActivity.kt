@@ -4,16 +4,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -24,8 +28,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
@@ -38,19 +46,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            DataVistaTheme {
-                val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = "notas") {
-                    composable(route = "notas") {
-                        NotasScreen(navController = navController)
-                    }
-                    composable(
-                        route = "contenido/{nota}",
-                        arguments = listOf(navArgument("nota") { type = NavType.StringType })
-                    ) { backStackEntry ->
-                        ContenidoScreen(nota = backStackEntry.arguments?.getString("nota") ?: "")
-                    }
-                }
+            DataVistaApp()
+        }
+    }
+}
+
+@Composable
+fun DataVistaApp() {
+    DataVistaTheme {
+        val navController = rememberNavController()
+        val viewModel: DataVistaViewModel = viewModel()
+        NavHost(navController = navController, startDestination = "notas") {
+            composable(route = "notas") {
+                NotasScreen(navController = navController, viewModel = viewModel)
+            }
+            composable(
+                route = "contenido/{nota}",
+                arguments = listOf(navArgument("nota") { type = NavType.StringType })
+            ) { backStackEntry ->
+                ContenidoScreen(
+                    nota = backStackEntry.arguments?.getString("nota") ?: "",
+                    viewModel = viewModel
+                )
             }
         }
     }
@@ -58,49 +75,64 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotasScreen(navController: NavController) {
+fun NotasScreen(navController: NavController, viewModel: DataVistaViewModel) {
+    val notas = listOf(
+        "Nota 1",
+        "Nota 2",
+        "Nota 3",
+        "Nota 4"
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
                 colors = topAppBarColors(
-                    containerColor = Color.Black,
-                    titleContentColor = Color.White,
+                    containerColor = Color(0xFF26A69A),
                 ),
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        Text("DataVista")
+                        Text(
+                            "DataVista",
+                            color = Color.Black,
+                            style = TextStyle(
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
                         Image(
-                            painter = painterResource(id = R.drawable.bloc_notas),
+                            painter = painterResource(id = R.drawable.logodatavista),
                             contentDescription = "Imagen de un bloc de notas",
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier
+                                .size(35.dp)
                         )
                     }
                 }
             )
         }
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
                 .padding(innerPadding)
-                .padding(bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(top = 10.dp)
         ) {
-            LazyColumn {
-                items(8) { objetoIndex ->
-                    val contenido = when (objetoIndex) {
-                        0 -> "Esta es la primera nota"
-                        1 -> "Aqui se muestra el contenido de la segunda nota"
-                        else -> "Contenido genérico"
-                    }
-
+            items(notas) { nota ->
+                Row(
+                    modifier = Modifier
+                        .clickable { navController.navigate("contenido/$nota") }
+                        .padding(vertical = 5.dp, horizontal = 12.dp)
+                        .fillMaxWidth()
+                        .background(Color.DarkGray, shape = RoundedCornerShape(8.dp)),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "Nota $objetoIndex",
-                        modifier = Modifier.clickable {
-                            navController.navigate("contenido/$contenido")
-                        }
+                        text = nota,
+                        color = Color.White,
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
             }
@@ -109,7 +141,7 @@ fun NotasScreen(navController: NavController) {
 }
 
 @Composable
-fun ContenidoScreen(nota: String) {
+fun ContenidoScreen(nota: String, viewModel: DataVistaViewModel) {
     Column(
         modifier = Modifier
             .padding(16.dp)
@@ -117,9 +149,9 @@ fun ContenidoScreen(nota: String) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Contenido de la nota:")
+        Text(text = "Contenido de la nota:", color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = nota)
+        Text(text = nota, color = Color.White)
     }
 }
 
@@ -128,6 +160,6 @@ fun ContenidoScreen(nota: String) {
 fun GreetingPreview() {
     DataVistaTheme {
         val navController = rememberNavController()
-        NotasScreen(navController = navController)
+        NotasScreen(navController = navController, viewModel = DataVistaViewModel())
     }
 }
